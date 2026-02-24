@@ -122,8 +122,8 @@ export default function Hero() {
                 <AnimatedText
                     el="p"
                     text={[
-                        "We create, launch and optimize revenue-generating ad campaigns for small brands.",
-                        "No shoots. No models. No marketing team required."
+                        "No shoots. No models. No marketing team required.",
+                        "We create, launch and optimize revenue-generating ad campaigns for brands."
                     ]}
                     style={{ fontSize: '1.25rem', color: 'var(--text-muted)', marginBottom: '3rem', maxWidth: '700px', margin: '0 auto 3rem auto' }}
                 />

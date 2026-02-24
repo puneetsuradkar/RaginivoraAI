@@ -8,7 +8,7 @@ const bulletPoints = [
     "Data-driven optimization",
     "Transparent reporting",
     "Affordable pricing",
-    "Built for small brands"
+    "Built for brands"
 ];
 
 function AnimatedCounter({ end, suffix = "", prefix = "", duration = 2 }) {

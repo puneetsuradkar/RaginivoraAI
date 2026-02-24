@@ -89,7 +89,7 @@ export default function Services() {
                     </h2>
                     <AnimatedText
                         el="p"
-                        text="Complete AI-Powered Advertising & Growth Infrastructure for Small Brands"
+                        text="Complete AI-Powered Advertising & Growth Infrastructure for Brands"
                         style={{ color: 'var(--text-muted)', fontSize: '1.25rem', maxWidth: '700px', margin: '0 auto' }}
                     />
                 </motion.div>

@@ -40,7 +40,7 @@ export default function Problem() {
                     style={{ textAlign: 'center', marginBottom: '4rem' }}
                 >
                     <h2 className="font-heading" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 700, marginBottom: '1rem' }}>
-                        Why Most Small Brands <span style={{ color: '#ef4444', textShadow: '0 0 20px rgba(239, 68, 68, 0.4)' }}>Fail</span> at Advertising
+                        Why Most Brands <span style={{ color: '#ef4444', textShadow: '0 0 20px rgba(239, 68, 68, 0.4)' }}>Fail</span> at Advertising
                     </h2>
                 </motion.div>
 

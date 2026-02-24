@@ -7,7 +7,7 @@ export default function App({ Component, pageProps }) {
     <>
       <Head>
         <title>RaginivoraAI | AI-Powered Growth & Advertising System</title>
-        <meta name="description" content="We create, launch and optimize revenue-generating ad campaigns for small brands. Launch High-Converting Ads in 72 Hours." />
+        <meta name="description" content="We create, launch and optimize revenue-generating ad campaigns for brands. Launch High-Converting Ads in 72 Hours." />
       </Head>
       <Layout>
         <Component {...pageProps} />
