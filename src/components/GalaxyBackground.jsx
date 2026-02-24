@@ -43,23 +43,29 @@ export default function GalaxyBackground() {
             }
         }
 
-        // Adjust particle count based on screen width for performance/density
-        const particleCount = width < 768 ? 60 : 150;
+        // Adjust particle count to prevent O(n^2) loop from lagging the device
+        const particleCount = width < 768 ? 30 : 60; // Drastically reduced for performance
 
         for (let i = 0; i < particleCount; i++) {
             particles.push(new Particle());
         }
 
         let animationFrameId;
+
+        // Cache gradient to prevent creating it every frame (memory leak prevention)
+        const createGradient = () => {
+            const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width);
+            gradient.addColorStop(0, '#0a0a0a');
+            gradient.addColorStop(0.6, '#130428');
+            gradient.addColorStop(1, '#050a1f');
+            return gradient;
+        };
+        let cachedGradient = createGradient();
+
         const render = () => {
             ctx.clearRect(0, 0, width, height);
 
-            // Dynamic Deep Space / Galaxy Gradient
-            const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width);
-            gradient.addColorStop(0, '#0a0a0a'); // keep center dark
-            gradient.addColorStop(0.6, '#130428'); // deep purple transition
-            gradient.addColorStop(1, '#050a1f'); // deep blue edges
-            ctx.fillStyle = gradient;
+            ctx.fillStyle = cachedGradient;
             ctx.fillRect(0, 0, width, height);
 
             particles.forEach(p => {
@@ -94,6 +100,7 @@ export default function GalaxyBackground() {
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
+            cachedGradient = createGradient(); // Update gradient on resize
         };
         window.addEventListener('resize', handleResize);
         return () => {
