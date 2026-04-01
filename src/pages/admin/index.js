@@ -50,14 +50,18 @@ export default function AdminDashboard() {
     const fetchLeads = async (pwd) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/leads?password=${pwd}`);
+            const res = await fetch(`/api/admin/leads?password=${encodeURIComponent(pwd)}`);
+            const data = await res.json();
             if (res.ok) {
-                const data = await res.json();
                 setLeads(data);
                 setIsAuthenticated(true);
                 localStorage.setItem('admin_pwd', pwd);
-            } else {
+            } else if (res.status === 401) {
                 setError('Invalid admin password');
+            } else if (res.status === 503) {
+                setError(`Database error: ${data.hint || data.message}`);
+            } else {
+                setError(data.message || 'Server error — check console');
             }
         } catch (err) {
             setError('Failed to connect to server');

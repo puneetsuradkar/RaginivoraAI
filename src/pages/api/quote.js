@@ -1,10 +1,11 @@
 import nodemailer from 'nodemailer';
-import { db } from '@/lib/firebase-admin';
+import { getDb } from '@/lib/firebase-admin';
 
 // ─── Firestore Save ─────────────────────────────────────────────────────────
 async function saveToFirestore(data) {
-    if (!process.env.FIREBASE_PROJECT_ID) {
-        console.warn('Firebase env vars not set. Skipping Firestore save.');
+    const db = getDb();
+    if (!db) {
+        console.warn('[Quote] Firebase not configured. Skipping Firestore save.');
         return null;
     }
 
@@ -18,8 +19,8 @@ async function saveToFirestore(data) {
         });
         return docRef.id;
     } catch (error) {
-        console.error('Firestore save error:', error);
-        throw error;
+        console.error('[Quote] Firestore save error:', error.message);
+        return null;
     }
 }
 

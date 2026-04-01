@@ -1,4 +1,4 @@
-import { db } from '@/lib/firebase-admin';
+import { getDb } from '@/lib/firebase-admin';
 
 export default async function handler(req, res) {
     if (req.method !== 'PATCH') {
@@ -16,6 +16,9 @@ export default async function handler(req, res) {
     }
 
     try {
+        const db = getDb();
+        if (!db) return res.status(503).json({ message: 'Database not configured' });
+
         const updateData = {};
         if (status) updateData.status = status;
         if (notes !== undefined) updateData.notes = notes;
