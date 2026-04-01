@@ -7,23 +7,18 @@ export default function Navbar() {
             initial={{ y: -100 }}
             animate={{ y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            style={{
-                position: 'fixed',
-                top: 0,
-                width: '100%',
-                zIndex: 50,
-                background: 'rgba(10, 10, 10, 0.8)',
-                backdropFilter: 'blur(12px)',
-                borderBottom: '1px solid var(--border)'
-            }}
+            className="fixed top-0 left-0 w-full z-[100] bg-black/40 backdrop-blur-xl border-b border-white/5"
         >
-            <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80px' }}>
+            <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                <Link href="/" className="font-heading text-xl font-black tracking-tighter text-white hover:text-purple-400 transition-colors">
+                    Raginivora<span className="bg-gradient-glow bg-clip-text text-transparent">AI</span>
+                </Link>
 
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                    <Link href="#services" className="nav-link" style={{ fontWeight: 500, fontSize: '0.95rem', color: 'var(--text-muted)', display: 'inline-block' }}>Services</Link>
-                    <Link href="#pricing" className="nav-link" style={{ fontWeight: 500, fontSize: '0.95rem', color: 'var(--text-muted)', display: 'inline-block' }}>Pricing</Link>
-                    <Link href="#contact" className="btn btn-primary" style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem' }}>
-                        Get Free Demo
+                <div className="flex gap-8 items-center">
+                    <Link href="#services" className="text-sm font-semibold text-neutral-400 hover:text-white transition-colors">Services</Link>
+                    <Link href="#work" className="text-sm font-semibold text-neutral-400 hover:text-white transition-colors">Projects</Link>
+                    <Link href="#contact" className="btn btn-primary px-5 py-2 text-sm">
+                        Start a Project
                     </Link>
                 </div>
             </div>

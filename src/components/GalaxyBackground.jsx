@@ -1,126 +1,97 @@
-import { useEffect, useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Stars, Float, FloatProps } from '@react-three/drei';
+import * as THREE from 'three';
+
+const ParticleField = () => {
+  const pointsRef = useRef();
+
+  const particles = useMemo(() => {
+    const count = 1000;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const opacities = new Float32Array(count);
+
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 40;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 40;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+
+      const mixedColor = new THREE.Color();
+      mixedColor.lerpColors(new THREE.Color('#a855f7'), new THREE.Color('#3b82f6'), Math.random());
+      colors[i * 3] = mixedColor.r;
+      colors[i * 3 + 1] = mixedColor.g;
+      colors[i * 3 + 2] = mixedColor.b;
+
+      opacities[i] = Math.random();
+    }
+    return { positions, colors, opacities };
+  }, []);
+
+  useFrame((state) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y += 0.0005;
+      pointsRef.current.rotation.x += 0.0002;
+    }
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particles.positions.length / 3}
+          array={particles.positions}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          count={particles.colors.length / 3}
+          array={particles.colors}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.06}
+        vertexColors
+        transparent
+        opacity={0.6}
+        sizeAttenuation
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+};
 
 export default function GalaxyBackground() {
-    const canvasRef = useRef(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
-
-        let particles = [];
-        const colors = ['#a855f7', '#3b82f6', '#8b5cf6', '#ffffff'];
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height;
-                this.size = Math.random() * 1.5;
-                this.speedX = Math.random() * 0.4 - 0.2;
-                this.speedY = Math.random() * 0.4 - 0.2;
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-                this.alpha = Math.random() * 0.5 + 0.1;
-            }
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.x > width) this.x = 0;
-                if (this.x < 0) this.x = width;
-                if (this.y > height) this.y = 0;
-                if (this.y < 0) this.y = height;
-            }
-            draw() {
-                ctx.globalAlpha = this.alpha;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1;
-            }
-        }
-
-        // Adjust particle count to prevent O(n^2) loop from lagging the device
-        const particleCount = width < 768 ? 30 : 60; // Drastically reduced for performance
-
-        for (let i = 0; i < particleCount; i++) {
-            particles.push(new Particle());
-        }
-
-        let animationFrameId;
-
-        // Cache gradient to prevent creating it every frame (memory leak prevention)
-        const createGradient = () => {
-            const gradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width);
-            gradient.addColorStop(0, '#0a0a0a');
-            gradient.addColorStop(0.6, '#130428');
-            gradient.addColorStop(1, '#050a1f');
-            return gradient;
-        };
-        let cachedGradient = createGradient();
-
-        const render = () => {
-            ctx.clearRect(0, 0, width, height);
-
-            ctx.fillStyle = cachedGradient;
-            ctx.fillRect(0, 0, width, height);
-
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-
-            // Constellation / Neural network lines
-            for (let i = 0; i < particles.length; i++) {
-                for (let j = i; j < particles.length; j++) {
-                    const dx = particles[i].x - particles[j].x;
-                    const dy = particles[i].y - particles[j].y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < 120) {
-                        ctx.beginPath();
-                        ctx.strokeStyle = particles[i].color;
-                        ctx.globalAlpha = 0.15 * (1 - distance / 120);
-                        ctx.lineWidth = 0.5;
-                        ctx.moveTo(particles[i].x, particles[i].y);
-                        ctx.lineTo(particles[j].x, particles[j].y);
-                        ctx.stroke();
-                        ctx.globalAlpha = 1;
-                    }
-                }
-            }
-            animationFrameId = requestAnimationFrame(render);
-        };
-        render();
-
-        const handleResize = () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
-            cachedGradient = createGradient(); // Update gradient on resize
-        };
-        window.addEventListener('resize', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            cancelAnimationFrame(animationFrameId);
-        };
-    }, []);
-
-    return (
-        <canvas
-            ref={canvasRef}
-            style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100vw',
-                height: '100vh',
-                zIndex: -1,
-                pointerEvents: 'none'
-            }}
+  return (
+    <div className="fixed inset-0 -z-10 bg-black pointer-events-none">
+      <Canvas
+        camera={{ position: [0, 0, 10], fov: 75 }}
+        gl={{ antialias: true, alpha: true }}
+      >
+        <color attach="background" args={['#050505']} />
+        
+        <fog attach="fog" args={['#050505', 10, 50]} />
+        
+        <Stars 
+          radius={100} 
+          depth={50} 
+          count={5000} 
+          factor={4} 
+          saturation={0} 
+          fade 
+          speed={1} 
         />
-    );
+        
+        <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
+          <ParticleField />
+        </Float>
+
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} intensity={1} />
+      </Canvas>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000_90%)]" />
+    </div>
+  );
 }
