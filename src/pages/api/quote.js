@@ -1,47 +1,26 @@
 import nodemailer from 'nodemailer';
-import { google } from 'googleapis';
+import { db } from '@/lib/firebase-admin';
 
-// ─── Google Sheets Append ───────────────────────────────────────────────────
-async function appendToSheet(data) {
-    if (
-        !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ||
-        !process.env.GOOGLE_PRIVATE_KEY ||
-        !process.env.GOOGLE_SPREADSHEET_ID
-    ) {
-        console.warn('Google Sheets env vars not set. Skipping sheet append.');
-        return;
+// ─── Firestore Save ─────────────────────────────────────────────────────────
+async function saveToFirestore(data) {
+    if (!process.env.FIREBASE_PROJECT_ID) {
+        console.warn('Firebase env vars not set. Skipping Firestore save.');
+        return null;
     }
 
-    const auth = new google.auth.GoogleAuth({
-        credentials: {
-            client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        },
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const sheets = google.sheets({ version: 'v4', auth });
-    const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-
-    await sheets.spreadsheets.values.append({
-        spreadsheetId: process.env.GOOGLE_SPREADSHEET_ID,
-        range: 'Leads!A:J',
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-            values: [[
-                timestamp,
-                data.name,
-                data.email,
-                data.phone,
-                data.service,
-                data.budget,
-                data.timeline,
-                data.description,
-                'New 🆕',
-                '' // Follow-up notes column
-            ]],
-        },
-    });
+    try {
+        const timestamp = new Date().toISOString();
+        const docRef = await db.collection('leads').add({
+            ...data,
+            createdAt: timestamp,
+            status: 'New',
+            notes: '',
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error('Firestore save error:', error);
+        throw error;
+    }
 }
 
 // ─── Email Transporter ──────────────────────────────────────────────────────
@@ -59,7 +38,7 @@ function createTransporter() {
 }
 
 // ─── Owner Notification HTML ─────────────────────────────────────────────────
-function ownerEmailHtml(data) {
+function ownerEmailHtml(data, leadId) {
     return `
 <!DOCTYPE html>
 <html>
@@ -116,11 +95,11 @@ function ownerEmailHtml(data) {
 
       <div style="text-align:center;margin-top:28px;">
         <a href="mailto:${data.email}?subject=Re: Your Project Inquiry - RaginivoraAI Studio&body=Hi ${data.name},%0A%0AThank you for reaching out..."
-           style="display:inline-block;background:linear-gradient(135deg,#a855f7,#3b82f6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:999px;font-weight:700;font-size:15px;">
+           style="display:inline-block;background:linear-gradient(135deg,#a855f7,#3b82f6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:999px;font-weight:700;font-size:15px;margin-bottom:12px;">
           ✉️ Reply to ${data.name}
         </a>
         <p style="margin:16px 0 0;font-size:12px;color:#525252;">
-          This lead was also saved to your <strong style="color:#a855f7;">Google Sheet CRM</strong>
+          View this lead in your <a href="${process.env.NEXT_PUBLIC_BASE_URL}/admin" style="color:#a855f7;text-decoration:none;">Admin Dashboard</a> (ID: ${leadId})
         </p>
       </div>
 
@@ -210,22 +189,21 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const results = { email: false, sheet: false };
+    let leadId = null;
 
-    // 1. Append to Google Sheets (non-blocking)
+    // 1. Save to Firestore
     try {
-        await appendToSheet({ name, email, phone, service, budget, timeline, description });
-        results.sheet = true;
-    } catch (sheetErr) {
-        console.error('Google Sheets error:', sheetErr.message);
+        leadId = await saveToFirestore({ name, email, phone, service, budget, timeline, description });
+    } catch (dbErr) {
+        console.error('Database error:', dbErr.message);
     }
 
     // 2. Send Emails
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
         console.log('--- NEW QUOTE SUBMISSION ---');
-        console.log({ name, email, phone, service, budget, timeline, description });
+        console.log({ name, email, phone, service, budget, timeline, description, leadId });
         console.warn('SMTP not configured. Emails not sent.');
-        return res.status(200).json({ message: 'Received (email not configured)', results });
+        return res.status(200).json({ message: 'Received (emails simulated)', leadId });
     }
 
     try {
@@ -238,7 +216,7 @@ export default async function handler(req, res) {
                 from: `"RaginivoraAI Studio" <${process.env.SMTP_USER}>`,
                 to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
                 subject: `🔥 New ${service} Inquiry from ${name}`,
-                html: ownerEmailHtml({ name, email, phone, service, budget, timeline, description }),
+                html: ownerEmailHtml({ name, email, phone, service, budget, timeline, description }, leadId),
             }),
             // Auto-reply to client
             transporter.sendMail({
@@ -249,11 +227,9 @@ export default async function handler(req, res) {
             }),
         ]);
 
-        results.email = true;
-        res.status(200).json({ message: 'Quote submitted successfully', results });
+        res.status(200).json({ message: 'Quote submitted successfully', leadId });
     } catch (emailErr) {
         console.error('Email error:', emailErr.message);
-        // Still return success since the sheet save worked
-        res.status(200).json({ message: 'Received (email failed)', results });
+        res.status(200).json({ message: 'Lead saved but email failed', leadId });
     }
 }
